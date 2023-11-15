@@ -19,6 +19,7 @@ struct Token {
     Token *next;     // 次の入力トークン
     int val;         // kindがTK_NUMの場合、その数値
     char *str;       // トークン文字列
+    int len;         // トークンの長さ
 };
 
 Token *token;
@@ -71,7 +72,9 @@ void error_at(char *loc, char *format, ...) {
 // 次のトークンが期待している（引数で与えた）記号の時には、
 // トークンを1つ読み進めて真を返す。それ以外の場合は偽を返す。
 bool consume(char op) {
-    if (token->kind != TK_RESERVED || token->str[0] != op) {
+    if (token->kind != TK_RESERVED 
+        || strlen(op) != token->len 
+        || memcmp(token->str, op, token->len)) {
         return false;
     }
     token = token->next;
@@ -81,7 +84,9 @@ bool consume(char op) {
 // 次のトークンが期待している（引数で与えた）記号の時には、
 // トークンを1つ読み進める。それ以外の場合はエラーを報告する。
 void expect(char op) {
-    if (token->kind != TK_RESERVED || token->str[0] != op) {
+    if (token->kind != TK_RESERVED
+        || strlen(op) != token->len
+        || memcmp(token->str, op, token->len)) {
         error_at(token->str, "expected '%c", op);
     }
     token = token->next;
@@ -103,10 +108,11 @@ bool at_eof(void) {
 }
 
 // 新しいトークンを作成して、curに繋げる
-Token *new_token(Token_kind kind, Token *cur, char *str) {
+Token *new_token(Token_kind kind, Token *cur, char *str, int len) {
     Token *tok = calloc(1, sizeof(Token));
     tok->kind = kind;
     tok->str = str;
+    tok->len = len;
     cur->next = tok;
     return tok;
 }
@@ -160,6 +166,7 @@ Node *new_node_num(int val) {
 Node *mul(void);
 Node *primary(void);
 Node *expr(void);
+Node *unary(void);
 
 // expr = mul ("+" mul | "-" mul)*
 Node *expr(void) {
@@ -176,15 +183,15 @@ Node *expr(void) {
     }
 }
 
-// mul = primary ("*" primary | "/" primary)*
+// mul = unary ("*" unary | "/" unary)*
 Node *mul(void) {
-    Node *node = primary();
+    Node *node = unary();
 
     for (;;) {
         if (consume('*')) {
-            node = new_node(ND_MUL, node, primary());
+            node = new_node(ND_MUL, node, unary());
         } else if (consume('/')) {
-            node = new_node(ND_DIV, node, primary());
+            node = new_node(ND_DIV, node, unary());
         } else {
             return node;
         }
@@ -201,6 +208,17 @@ Node *primary(void) {
     }
     // そうでなければ数値のはず
     return new_node_num(expect_number());
+}
+
+// unary   = ("+" | "-")? primary
+Node *unary(void) {
+    if (consume('+')) {
+        return unary();
+    }
+    if (consume('-')) {
+        return new_node(ND_SUB, new_node_num(0), unary());
+    }
+    return primary();
 }
 
 void gen(Node *node) {
