@@ -1,4 +1,14 @@
+#include <stdio.h>
 #include "9cc.h"
+
+void gen_lval(Node *node) {
+    if (node->kind != ND_LVAR) {
+        error("‘ã“ü‚Ì¶•Ó’l‚ª•Ï”‚Å‚Í‚ ‚è‚Ü‚¹‚ñ");
+    }
+    printf("    mov rax, rbp\n");
+    printf("    sub rax, %d\n", node->offset);
+    printf("    push rax\n");
+}
 
 void gen(Node *node) {
     if (node->kind == ND_NUM) {

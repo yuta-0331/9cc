@@ -19,7 +19,8 @@
     *********************/
     typedef enum {
         TK_RESERVED, // 記号
-        TK_NUM,      // 整数トークン
+	TK_IDENT,    // 識別子
+	TK_NUM,      // 整数トークン
         TK_EOF,      // 入力の終わりを示すトークン
     } Token_kind;
 
@@ -38,15 +39,16 @@
     * nodeの構造体定義
     *********************/
     typedef enum {
-        ND_ADD, // +
-        ND_SUB, // -
-        ND_MUL, // *
-        ND_DIV, // /
-        ND_EQ,  // ==
-        ND_NE,  // !=
-        ND_LT,  // <
-        ND_LE,  // <=
-        ND_NUM, // 整数
+        ND_ADD,  // +
+        ND_SUB,  // -
+        ND_MUL,  // *
+        ND_DIV,  // /
+        ND_EQ,   // ==
+        ND_NE,   // !=
+        ND_LT,   // <
+        ND_LE,   // <=
+	ND_LVAR, // ローカル変数
+        ND_NUM,  // 整数
     } NodeKind;
 
     /********************
@@ -57,6 +59,7 @@
         struct _Node *lhs; // 左辺
         struct _Node *rhs; // 右辺
         int val;           // ND_NUMの場合、その値
+	int offset;	   // kindがND_LVARの場合のみ使う
     } Node;
 
     /********************
@@ -87,6 +90,16 @@
     *   (1)期待した値だった場合, (0)それ以外
     *********************/
     bool consume(char *op);
+
+    /********************
+    * consume: 消費する
+    * トークンがローカル変数(a ~ zの文字)の時には、
+    * トークンを1つ読み進めてローカル変数tokenへのポインタ返す。
+    * 戻り値:
+    *   ローカル変数だった場合,そのtokenへのポインタを返す。 
+    *   それ以外の場合、NULL
+    *********************/
+    Token *consume_ident(void);
 
     /********************
     * expect: 期待する
@@ -136,6 +149,8 @@
     bool start_with(char *p, char *q);
 
     /********************
+    * p(user_input)をtokenに分割して
+    * 先頭データ（データヘッドの次のtoken）を返す
     * 引数:
     *   p: tokenizeする文字列（user_input） 
     * 戻り値:
@@ -165,15 +180,21 @@
 
     /********************
     * 構文解析は以下の通りになる
-    *  expr = equarity
-    *  equarity = relational ("==" relational | "!=" relational)*
-    *  relational = add ("<" add | "<=" add | ">" add | ">=" add)*
-    *  add = mul ("+" mul | "-" mul)*
-    *  mul = unary ("+" unary | "-" unary)*
-    *  unary = ("+" | "-")? primary
-    *  primary = num | "(" expr ")"
+    * program = stmt*
+    * stmt = expr ";"
+    * expr = assign
+    * assign = equarity ("=" assign)? 
+    * equarity = relational ("==" relational | "!=" relational)*
+    * relational = add ("<" add | "<=" add | ">" add | ">=" add)*
+    * add = mul ("+" mul | "-" mul)*
+    * mul = unary ("+" unary | "-" unary)*
+    * unary = ("+" | "-")? primary
+    * primary = num | ident | "(" expr ")"
     *********************/
+    void program(void);
+    Node *stmt(void);
     Node *expr(void);
+    Node *assign(void);
     Node *equality(void);
     Node *relational(void);
     Node *add(void);
@@ -189,8 +210,18 @@
     *********************/
     void gen(Node *node);
 
+    /********************
+    * generator: 発生器
+    * 左辺値のアセンブリを出力関数
+    * 引数: 
+    *   node: 
+    *********************/
+    void gen_lval(Node *node);
+
     // 入力プログラム
     extern char *user_input;
+    // 複数のnodeを格納する
+    extern Node *code[100];
     // 現在のtoken
     extern Token *token;
 
