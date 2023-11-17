@@ -31,5 +31,5 @@ if [ $player_choice -eq $computer_choice ]; then
 elif [ $player_choice -eq 1 -a $computer_choice -eq 2 ] || [ $player_choice -eq 2 -a $computer_choice -eq 3 ] || [ $player_choice -eq 3 -a $computer_choice -eq 1 ]; then
     echo "あなたの勝ちです！"
 else
-    echo "コンピューターの勝ちです！"
+    echo "コンピューターの勝ちです！
 fi

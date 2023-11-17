@@ -71,10 +71,10 @@ Token *tokenize(char *p) {
             p++;
             continue;
         }
-	if (*p >= 'a' && *p <= 'z') {
-	    cur = new_token(TK_IDENT, cur, p++, 1);
-	    continue;
-	}
+        if (*p >= 'a' && *p <= 'z') {
+            cur = new_token(TK_IDENT, cur, p++, 1);
+            continue;
+        }
         if (start_with(p, "==") 
             || start_with(p, "!=")
             || start_with(p, "<=")
